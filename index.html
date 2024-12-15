@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>HVAC System Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <h1>HVAC 系统性能分析仪表板</h1>
+    <div id="performance_chart" style="width:100%;height:500px;"></div>
+
+    <script>
+        // 从 Flask API 获取数据
+        fetch('http://127.0.0.1:5000/api/performance')
+            .then(response => response.json())
+            .then(data => {
+                // 提取时间戳和 COP 数据
+                let timestamps = data.map(d => d.timestamp);
+                let cop_values = data.map(d => d.COP);
+
+                // 使用 Plotly 绘制图表
+                let trace = {
+                    x: timestamps,
+                    y: cop_values,
+                    type: 'scatter',
+                    mode: 'lines+markers',
+                    name: 'COP 效率'
+                };
+
+                let layout = {
+                    title: 'HVAC 性能分析',
+                    xaxis: { title: '时间戳' },
+                    yaxis: { title: 'COP (性能系数)' }
+                };
+
+                Plotly.newPlot('performance_chart', [trace], layout);
+            })
+            .catch(error => console.error('Error:', error));
+    </script>
+</body>
+</html>

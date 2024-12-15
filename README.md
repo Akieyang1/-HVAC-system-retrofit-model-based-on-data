@@ -1,64 +1,75 @@
-# -HVAC-system-retrofit-model-based-on-data
-Akila系统帮助客户收集了大量的实时的暖通系统方面的数据，但是如果利用这些数据来帮助客户去了解暖通设备的性能，帮助客户通过数据进行投资改造的决策，是现在当前面临的一个挑战。同样，实现这个功能是向客户展示数据的真正价值之一。
-# 1. 数据收集与清洗
-工作内容：
-从客户已有的暖通系统实时数据平台获取数据（通过API或数据库连接）。
-数据包括：
-时间序列：室内外温度、湿度、机组耗电量、流量、阀门开度、风机启停状态、机组运行功率、负荷数据等
-维护记录及设备基本信息
+# 已停止维护
+大部分购买方式已迁移至手机端，需配合抓包处理。暂无更新计划。
 
-处理手段：
-编写Airflow任务定期拉取数据（例如每小时）
-使用Pandas进行数据清洗与特征提取（如计算每天平均COP，统计机组启停次数等）
+# 大麦抢票脚本 V2.1
+更新
+- 增加选座购买，暂时只支持抢购指定价格下的座位，且暂不支持连坐购买。
 
-# 2. 设备库构建
-工作内容：
-建立一个数据表（设备库），存储各类暖通设备的参数：
+# 大麦抢票脚本 V2.0
+在学习到接口相关知识后，决定改造之前的脚本。
 
-设备类型（风机盘管、冷水机组、锅炉、热交换器等）
-额定功率、额定工况下的COP或EER
-可运行负荷范围、维护周期与成本、寿命年限、价格信息等
-该设备库可用来在投资模型中选用可替代设备，从而进行改造方案评估。
+## 功能介绍
+之前的版本通过按钮操作，还要等待页面元素加载，效率低下。
+此版本仅需登录时用到页面，通过selenium打开页面进行登录。其余操作均通过requests进行请求。
 
-# 3. 效率计算模型
-基于实时运行数据计算系统效率指标，例如：
-COP（Coefficient of Performance）计算：
-COP=制冷量或制热量、机组功耗
-制冷量可通过测量供回水温差与水流量估算：
-Q=mCp(Treturn-Tsupply)
+ps: 暂不支持选座购买。
 
-# 4. 投资与改造决策模型
-思路：
-对于每种改造方案（例如更换现有冷水机组为更高COP机组），可设定：
+其流程图如下:
 
-新设备采购成本
-改造实施费用
-预期的能耗降低比例
-由此估算未来5-10年的节能收益（电费节省）
-计算净现值（NPV）与内部收益率（IRR）
-选择ROI最高的方案作为推荐
+<img src="images/flow_chart.jpeg" width="50%" height="50%" />
 
-# 5. 模拟与验证
-引入EnergyPlus等仿真工具或采用简化模型，将历史气候条件、室内需求负荷与设备特性输入模型中，仿真不同改造方案下的年度能耗情况。
-工具：
-使用Python的eppy包操控EnergyPlus输入文件（IDF文件），动态修改设备参数与运行策略，然后运行EnergyPlus仿真，获得输出能耗数据。
+## 准备工作
+### 1. 配置环境
 
-# 6. 自动化数据集成与展示
-使用Airflow调度以下任务：
+1.1 安装所需要的环境
+```shell
+pip install -r requirements.txt
+```
 
-定期拉取实时数据更新数据库
-运行模型计算当前COP与历史趋势
-运行改造方案评估，更新ROI与NPV分析结果
-将结果输出至前端API接口
+1.2 需要下载与系统安装对应的ChromeDriver驱动并配置(也可以改用其他浏览器驱动)，
 
-# 评分要点保证措施
-模型的准确度：
-通过历史数据与基准案例验证模型结果，并进行参数校准，使模拟结果与实际能耗数据的偏差降至可接受范围内（如<5%）。
-优化COP计算方法，确保输入数据可靠性。
+下载地址: http://chromedriver.storage.googleapis.com/index.html
 
-软件的使用体验：
-提供简洁明了的前端界面，清晰显示能耗趋势、COP变化、改造方案的NPV和ROI对比，提供可交互的情景切换与导出报告功能。
+1.3 配置驱动路径，默认在项目根目录下。
 
-数据的自动倒入集成：
-采用Airflow自动化工作流，在后台定期执行数据同步与模型计算。
-确保数据管道可靠性并自动更新前端可视化结果。
+例如：windows系统下，则重命名下载的chromedriver，将其重命名为chromedriver_windows
+```python
+def account_login():
+    if platform.system().lower() == 'linux':
+        chromedriver = os.path.join(os.getcwd(), 'chromedriver_linux')
+    elif platform.system().lower() == 'windows':
+        chromedriver = os.path.join(os.getcwd(), 'chromedriver_windows')
+    else:
+        chromedriver = os.path.join(os.getcwd(), 'chromedriver_mac')
+```
+
+### 2. 运行
+2.1 若采取账号方式，修改代码中下面的信息，进行抢票。
+
+item_id根据地区来确定,每一个城市对应不同的item_id。选择相应地区后将箭头指向的item_id填写到函数内。
+```text
+def __init__(self):
+    ...
+    # 若选择账号登录方式，则需要填写
+    self.login_id: str = 'account'          # 大麦网登录账户名
+    self.login_password: str = 'password'   # 大麦网登录密码
+    # 以下为抢票必须的参数
+    self.item_id: int = 610820299671        # 商品id
+    self.viewer: list = ['viewer1']         # 在大麦网已填写的观影人
+    self.buy_nums: int = 1                  # 购买影票数量, 需与观影人数量一致
+    self.ticket_price: int = 180            # 购买指定票价
+```
+![image](images/item_id.png)
+
+2.2 运行
+
+初次登陆没有cookies，默认登录方式为账号密码登录方式，可改成其他方式进行登录，如扫码或短信登录。
+```shell
+# 默认登录方式
+python Automatic_ticket_purchase.py
+# 指定其他方式登录
+python Automatic_ticket_purchase.py --mode qr
+```
+
+
+免责声明：详见MIT License，此仓库仅用于个人参考学习，但如他人用本仓库代码用于商业用途(鄙视黄牛)，侵犯到大麦网利益等，本人不承担任何责任。
